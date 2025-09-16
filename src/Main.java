@@ -100,6 +100,7 @@ public class Main {
             System.out.println("\n===== MENÚ ADMINISTRADOR =====");
             System.out.println("1. Registrar nuevo usuario");
             System.out.println("2. Registrar asistencia manual");
+            System.out.println("3. Mostrar asistencias");
             System.out.println("0. Salir");
             System.out.print("Seleccione una opción: ");
             opcion = scanner.nextInt();
@@ -111,6 +112,9 @@ public class Main {
                     break;
                 case 2:
                     registrarAsistenciaManual(conn, scanner);
+                    break;
+                case 3:
+                    mostrarAsistenciasAdministrador(conn, scanner);
                     break;
                 case 0:
                     System.out.println("👋 Saliendo del menú administrador.");
@@ -260,6 +264,65 @@ public class Main {
 
             if (contador == 0) {
                 System.out.println("⚠️ No hay registros de asistencia.");
+            }
+
+            rs.close();
+            stmt.close();
+
+        } catch (Exception e) {
+            System.out.println("⚠️ Error al mostrar asistencias:");
+            e.printStackTrace();
+        }
+    }
+
+    public static void mostrarAsistenciasAdministrador(Connection conn, Scanner scanner) {
+        try {
+            System.out.println("\n===== MOSTRAR ASISTENCIAS =====");
+            System.out.println("1. Ver TODAS las asistencias");
+            System.out.println("2. Ver asistencias de un USUARIO específico");
+            System.out.print("Seleccione una opción: ");
+            int opcion = scanner.nextInt();
+            scanner.nextLine(); // limpiar buffer
+
+            PreparedStatement stmt;
+
+            if (opcion == 1) {
+                String sql = "SELECT a.fecha, a.hora_marcado, a.estado, u.nombre_usuario " +
+                        "FROM asistencias a INNER JOIN usuarios u ON a.usuario_id = u.id " +
+                        "ORDER BY a.fecha DESC, a.hora_marcado DESC";
+                stmt = conn.prepareStatement(sql);
+            } else if (opcion == 2) {
+                System.out.print("Ingrese el ID del usuario: ");
+                int usuarioId = scanner.nextInt();
+                scanner.nextLine();
+
+                String sql = "SELECT a.fecha, a.hora_marcado, a.estado, u.nombre_usuario " +
+                        "FROM asistencias a INNER JOIN usuarios u ON a.usuario_id = u.id " +
+                        "WHERE a.usuario_id = ? " +
+                        "ORDER BY a.fecha DESC, a.hora_marcado DESC";
+                stmt = conn.prepareStatement(sql);
+                stmt.setInt(1, usuarioId);
+            } else {
+                System.out.println("❌ Opción inválida.");
+                return;
+            }
+
+            ResultSet rs = stmt.executeQuery();
+
+            System.out.println("\n📋 Historial de asistencias:");
+            int contador = 0;
+            while (rs.next()) {
+                Date fecha = rs.getDate("fecha");
+                Time hora = rs.getTime("hora_marcado");
+                String estado = rs.getString("estado");
+                String nombreUsuario = rs.getString("nombre_usuario");
+
+                System.out.println("👤 Usuario: " + nombreUsuario + " | 📅 " + fecha + " | 🕒 " + hora + " | 🟢 Estado: " + estado);
+                contador++;
+            }
+
+            if (contador == 0) {
+                System.out.println("⚠️ No se encontraron registros.");
             }
 
             rs.close();
